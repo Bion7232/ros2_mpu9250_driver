@@ -32,7 +32,7 @@ MPU9250Driver::MPU9250Driver() : Node("mpu9250publisher")
     RCLCPP_INFO(this->get_logger(), "Calibrating...");
     mpu9250_->calibrate();
   }
-  if (this->get_parameter("covaraince")).as_bool(){
+  if (this->get_parameter("covariance")).as_bool(){
     RCLCPP_INFO(this->get_logger(), "Calc Covariance...");
     mpu9250_->covariance();
   } //add calc covariance;
@@ -71,6 +71,7 @@ void MPU9250Driver::handleInput()
 void MPU9250Driver::declareParameters()
 {
   this->declare_parameter<bool>("calibrate", true);
+  this->declare_parameter<bool>("covariance", true);
   this->declare_parameter<int>("gyro_range", MPU9250Sensor::GyroRange::GYR_250_DEG_S);
   this->declare_parameter<int>("accel_range", MPU9250Sensor::AccelRange::ACC_2_G);
   this->declare_parameter<int>("dlpf_bandwidth", MPU9250Sensor::DlpfBandwidth::DLPF_260_HZ);

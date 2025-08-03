@@ -515,3 +515,14 @@ std::array<double, 4> MPU9250Sensor::quaternionMultiply(
 
     return {w, x, y, z};
 }
+
+std::array<double, 9> get_accel_covariance_(){
+  return accel_covariance_;
+};
+std::array<double, 9> get_gyro_covariance_(){
+  return gyro_covariance_;
+};
+std::array<double, 9> get_orientation_covariance_(){
+  return orientation_covariance_;
+}
+
