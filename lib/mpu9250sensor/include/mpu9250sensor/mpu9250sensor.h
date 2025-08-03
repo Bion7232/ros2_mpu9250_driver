@@ -40,7 +40,7 @@ class MPU9250Sensor {
   void setGyroscopeOffset(double gyro_x_offset, double gyro_y_offset, double gyro_z_offset);
   void setAccelerometerOffset(double accel_x_offset, double accel_y_offset, double accel_z_offset);
   void calibrate();
-
+  void covariance();
  private:
   void initImuI2c() const;
   void initMagnI2c() const;
@@ -53,6 +53,19 @@ class MPU9250Sensor {
   int readAccelerometerRange();
   int readDlpfConfig();
 
+  void computeCovarianceMatrix(const std::vector<std::array<double, 3>>& samples, std::array<double, 9>& covariance);
+  void printCovarianceMatrix(const std::array<double, 9>& cov, const std::string& name);
+  std::array<double,4> calcQuart(double linear_acceleration_y, double linear_acceleration_z);
+  void computeQuaternionCovariance(
+    const std::vector<std::array<double, 4>>& quaternion_samples,
+    std::array<double, 9>& covariance);
+  std::array<double, 3> quaternionError(
+    const std::array<double, 4>& q_ref,
+    const std::array<double, 4>& q_current);
+  std::array<double, 4> quaternionMultiply(
+    const std::array<double, 4>& q1,
+    const std::array<double, 4>& q2);
+
   std::unique_ptr<I2cCommunicator> i2cBus_;
   int accel_range_{2};
   int gyro_range_{250};
@@ -64,6 +77,12 @@ class MPU9250Sensor {
   double accel_x_offset_{0.0};
   double accel_y_offset_{0.0};
   double accel_z_offset_{0.0};
+
+  // Covariance 관련 변수들 (새로 추가)
+  std::array<double, 9> accel_covariance_;
+  std::array<double, 9> gyro_covariance_;
+  std::array<double, 9> orientation_covariance_;
+
 
   // MPU9250 registers and addresses (s. datasheet for details)
   static constexpr int MPU9250_ADDRESS_DEFAULT = 0x68;
@@ -98,6 +117,7 @@ class MPU9250Sensor {
   const std::unordered_map<int, double> GYRO_SENS_MAP{
       {250, 131}, {500, 65.5}, {1000, 32.8}, {2000, 16.4}};
   static constexpr int CALIBRATION_COUNT{1000};
+  static constexpr int COVARIANCE_SAMPLE_COUNT{1000};
 };
 
 #endif  // MPU9250SENSOR_H

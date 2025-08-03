@@ -32,6 +32,13 @@ MPU9250Driver::MPU9250Driver() : Node("mpu9250publisher")
     RCLCPP_INFO(this->get_logger(), "Calibrating...");
     mpu9250_->calibrate();
   }
+  if (this->get_parameter("covaraince")).as_bool(){
+    RCLCPP_INFO(this->get_logger(), "Calc Covariance...");
+    mpu9250_->covaraince();
+  } //add calc covariance;
+
+
+
   mpu9250_->printConfig();
   mpu9250_->printOffsets();
   // Create publisher

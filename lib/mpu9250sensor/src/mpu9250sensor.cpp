@@ -313,3 +313,209 @@ void MPU9250Sensor::calibrate()
   accel_z_offset_ -= GRAVITY;
   calibrated_ = true;
 }
+
+void MPU9250Sensor::covariance()
+{
+    // 데이터 수집용 벡터
+    std::vector<std::array<double, 3>> accel_samples;
+    std::vector<std::array<double, 3>> gyro_samples;
+    std::vector<std::array<double, 4>> quaternion_samples;
+    
+    // 메모리 예약 (성능 최적화)
+    accel_samples.reserve(COVARIANCE_SAMPLE_COUNT);
+    gyro_samples.reserve(COVARIANCE_SAMPLE_COUNT);
+    quaternion_samples.reserve(COVARIANCE_SAMPLE_COUNT);
+
+    int count = 0;
+    while (count < COVARIANCE_SAMPLE_COUNT) {
+        // 센서 데이터 읽기
+        double corrected_accel_x = getAccelerationX();
+        double corrected_accel_y = getAccelerationY();
+        double corrected_accel_z =  getAccelerationZ();
+        double corrected_gyro_x = getAngularVelocityX();
+        double corrected_gyro_y = getAngularVelocityY();
+        double corrected_gyro_z = getAngularVelocityZ();
+
+        // 보정된 데이터를 샘플에 추가
+        accel_samples.push_back({corrected_accel_x, corrected_accel_y, corrected_accel_z});
+        gyro_samples.push_back({corrected_gyro_x, corrected_gyro_y, corrected_gyro_z});
+        quaternion_samples.push_back(calcQuart(corrected_accel_y, corrected_accel_z));
+        ++count;
+
+        // 진행 상황 표시 (10%마다)
+        if (count % (COVARIANCE_SAMPLE_COUNT / 10) == 0) {
+            std::cout << "Covariance calculation progress: " 
+                      << (count * 100 / COVARIANCE_SAMPLE_COUNT) << "%" << std::endl;
+        }
+
+        // 10ms 대기 (100Hz 샘플링)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    // 공분산 행렬 계산
+    computeCovarianceMatrix(accel_samples, accel_covariance_);
+    computeCovarianceMatrix(gyro_samples, gyro_covariance_);
+    computeQuaternionCovariance(quaternion_samples, orientation_covariance_);
+
+    // 방향 공분산은 자이로스코프 기반으로 추정 (간단한 방법)
+    // 실제로는 더 복잡한 센서 융합 기반 계산이 필요
+    //std::copy(gyro_covariance_.begin(), gyro_covariance_.end(), orientation_covariance_.begin());
+
+
+    //covariance_calculated_ = true;
+
+    std::cout << "Covariance calculation completed!" << std::endl;
+    
+    // 결과 출력
+    printCovarianceMatrix(accel_covariance_, "Accelerometer");
+    printCovarianceMatrix(gyro_covariance_, "Gyroscope");
+    printCovarianceMatrix(orientation_covariance_, "Orientation");
+}
+
+void MPU9250Sensor::computeCovarianceMatrix(const std::vector<std::array<double, 3>>& samples,
+                                           std::array<double, 9>& covariance)
+{
+    const int n = samples.size();
+    if (n < 2) {
+        std::cerr << "Error: Not enough samples for covariance calculation" << std::endl;
+        return;
+    }
+
+    // 평균 계산
+    std::array<double, 3> mean = {0.0, 0.0, 0.0};
+    for (const auto& sample : samples) {
+        for (int i = 0; i < 3; i++) {
+            mean[i] += sample[i];
+        }
+    }
+    for (int i = 0; i < 3; i++) {
+        mean[i] /= n;
+    }
+
+    // 공분산 행렬 계산 (3x3 행렬을 1차원 배열로 저장)
+    std::fill(covariance.begin(), covariance.end(), 0.0);
+    
+    for (const auto& sample : samples) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                covariance[i * 3 + j] += (sample[i] - mean[i]) * (sample[j] - mean[j]);
+            }
+        }
+    }
+
+    // 표본 공분산으로 정규화 (n-1로 나누기)
+    for (auto& cov : covariance) {
+        cov /= (n - 1);
+    }
+}
+void MPU9250Sensor::printCovarianceMatrix(const std::array<double, 9>& cov, 
+                                         const std::string& name)
+{
+    std::cout << std::endl << name << " Covariance Matrix:" << std::endl;
+    std::cout << std::fixed << std::setprecision(8);
+    
+    for (int i = 0; i < 3; i++) {
+        std::cout << "[";
+        for (int j = 0; j < 3; j++) {
+            std::cout << std::setw(12) << cov[i * 3 + j];
+            if (j < 2) std::cout << " ";
+        }
+        std::cout << "]" << std::endl;
+    }
+    
+    // 대각선 원소 (분산) 출력
+    std::cout << "Variances (diagonal): ["
+              << cov[0] << ", " << cov[4] << ", " << cov[8] << "]" << std::endl;
+    
+    // 표준편차 출력
+    std::cout << "Standard Deviations: ["
+              << std::sqrt(cov[0]) << ", " << std::sqrt(cov[4]) << ", " << std::sqrt(cov[8]) << "]" << std::endl;
+}
+
+std::array<double,4> MPU9250Sensor::calcQuart(double linear_acceleration_y, double linear_acceleration_z){
+  roll = atan2(linear_acceleration_y, linear_acceleration_z);
+  pitch = atan2(-linear_acceleration_y,
+                (sqrt(linear_acceleration_y * linear_acceleration_y +
+                      linear_acceleration_z * linear_acceleration_z)));
+  yaw = atan2(getMagneticFluxDensityY(), getMagneticFluxDensityX());
+
+  // Convert to quaternion
+  double cy = cos(yaw * 0.5);
+  double sy = sin(yaw * 0.5);
+  double cp = cos(pitch * 0.5);
+  double sp = sin(pitch * 0.5);
+  double cr = cos(roll * 0.5);
+  double sr = sin(roll * 0.5);
+
+  x = cy * cp * sr - sy * sp * cr;
+  y = sy * cp * sr + cy * sp * cr;
+  z = sy * cp * cr - cy * sp * sr;
+  w = cy * cp * cr + sy * sp * sr;
+      // double형 데이터를 담을 vector 선언
+  std::array<double, 4> myDoubleVector;
+
+  // 각 데이터를 vector에 하나씩 추가 (push_back 사용)
+  myDoubleVector[0]=x;
+  myDoubleVector[1]=y;
+  myDoubleVector[2]=z;
+  myDoubleVector[3]=w;
+  return myDoubleVector;
+}
+void MPU9250Sensor::computeQuaternionCovariance(
+    const std::vector<std::array<double, 4>>& quaternion_samples,
+    std::array<double, 9>& covariance)
+{
+    const int n = quaternion_samples.size();
+    if (n < 2) return;
+
+    // Quaternion은 단위 제약이 있으므로 특별한 처리 필요
+    // Method 1: Quaternion error vector 방법 (3차원)
+    std::vector<std::array<double, 3>> error_samples;
+    error_samples.reserve(n-1);
+
+    // 기준 quaternion (첫 번째 샘플)
+    auto q_ref = quaternion_samples[0];
+    
+    for (int i = 1; i < n; i++) {
+        auto q_current = quaternion_samples[i];
+        
+        // Quaternion difference -> 3D error vector
+        auto q_error = quaternionError(q_ref, q_current);
+        error_samples.push_back(q_error);
+    }
+    
+    // 3x3 공분산 계산
+    computeCovarianceMatrix(error_samples, covariance);
+}
+
+std::array<double, 3> MPU9250Sensor::quaternionError(
+    const std::array<double, 4>& q_ref,
+    const std::array<double, 4>& q_current)
+{
+    // q_error = q_current * q_ref^(-1)을 3D 벡터로 변환
+    // 작은 각도 근사: q_error ? [1, δθ/2]
+    
+    // Quaternion conjugate (inverse for unit quaternion)
+    std::array<double, 4> q_ref_inv = {q_ref[0], -q_ref[1], -q_ref[2], -q_ref[3]};
+    
+    // Quaternion multiplication: q_error = q_current * q_ref_inv
+    std::array<double, 4> q_error = quaternionMultiply(q_current, q_ref_inv);
+    
+    // Convert to 3D error vector (2 * vector part for small angles)
+    return {2.0 * q_error[1], 2.0 * q_error[2], 2.0 * q_error[3]};
+}
+std::array<double, 4> MPU9250Sensor::quaternionMultiply(
+    const std::array<double, 4>& q1,
+    const std::array<double, 4>& q2)
+{
+    double w1 = q1[0], x1 = q1[1], y1 = q1[2], z1 = q1[3];
+    double w2 = q2[0], x2 = q2[1], y2 = q2[2], z2 = q2[3];
+
+    // quaternion 곱: q = q1 * q2
+    double w = w1*w2 - x1*x2 - y1*y2 - z1*z2;
+    double x = w1*x2 + x1*w2 + y1*z2 - z1*y2;
+    double y = w1*y2 - x1*z2 + y1*w2 + z1*x2;
+    double z = w1*z2 + x1*y2 - y1*x2 + z1*w2;
+
+    return {w, x, y, z};
+}
