@@ -34,7 +34,7 @@ MPU9250Driver::MPU9250Driver() : Node("mpu9250publisher")
   }
   if (this->get_parameter("covaraince")).as_bool(){
     RCLCPP_INFO(this->get_logger(), "Calc Covariance...");
-    mpu9250_->covaraince();
+    mpu9250_->covariance();
   } //add calc covariance;
 
 
