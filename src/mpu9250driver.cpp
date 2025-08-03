@@ -83,7 +83,6 @@ void MPU9250Driver::handleInput()
   auto mag_msg = sensor_msgs::msg::MagneticField();
   mag_msg.header.stamp = this->get_clock()->now();
   mag_msg.header.frame_id = "imu_link";
-  auto b = mpu9250_->getMagneticField();  // {bx, by, bz}
   mag_msg.magnetic_field.x = mpu9250_->getMagneticFluxDensityX();
   mag_msg.magnetic_field.y = mpu9250_->getMagneticFluxDensityY();
   mag_msg.magnetic_field.z = mpu9250_->getMagneticFluxDensityZ();
