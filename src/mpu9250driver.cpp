@@ -74,7 +74,7 @@ void MPU9250Driver::handleInput()
 void MPU9250Driver::declareParameters()
 {
   this->declare_parameter<bool>("calibrate", true);
-  this->declare_parameter<bool>("covariance", true);
+  this->declare_parameter<bool>("covariance", rclcpp::ParameterValue(true));
   this->declare_parameter<int>("gyro_range", MPU9250Sensor::GyroRange::GYR_250_DEG_S);
   this->declare_parameter<int>("accel_range", MPU9250Sensor::AccelRange::ACC_2_G);
   this->declare_parameter<int>("dlpf_bandwidth", MPU9250Sensor::DlpfBandwidth::DLPF_260_HZ);

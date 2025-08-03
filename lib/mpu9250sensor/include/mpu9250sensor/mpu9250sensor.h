@@ -45,6 +45,10 @@ class MPU9250Sensor {
   void setAccelerometerOffset(double accel_x_offset, double accel_y_offset, double accel_z_offset);
   void calibrate();
   void covariance();
+  std::array<double, 9> get_accel_covariance_();
+  std::array<double, 9> get_gyro_covariance_();
+  std::array<double, 9> get_orientation_covariance_();
+
  private:
   void initImuI2c() const;
   void initMagnI2c() const;
@@ -69,9 +73,6 @@ class MPU9250Sensor {
   std::array<double, 4> quaternionMultiply(
     const std::array<double, 4>& q1,
     const std::array<double, 4>& q2);
-  std::array<double, 9> get_accel_covariance_();
-  std::array<double, 9> get_gyro_covariance_();
-  std::array<double, 9> get_orientation_covariance_();
 
 
 
