@@ -7,6 +7,8 @@
 
 #include "I2cCommunicator.h"
 
+#include <vector>
+
 class MPU9250Sensor {
  public:
   MPU9250Sensor(std::unique_ptr<I2cCommunicator> i2cBus);

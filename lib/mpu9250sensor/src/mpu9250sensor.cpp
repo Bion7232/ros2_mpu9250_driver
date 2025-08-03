@@ -317,9 +317,9 @@ void MPU9250Sensor::calibrate()
 void MPU9250Sensor::covariance()
 {
     // 데이터 수집용 벡터
-    std::vector<std::array<double, 3>> accel_samples;
-    std::vector<std::array<double, 3>> gyro_samples;
-    std::vector<std::array<double, 4>> quaternion_samples;
+    std::vector<std::array<double, 3>>accel_samples;
+    std::vector<std::array<double, 3>>gyro_samples;
+    std::vector<std::array<double, 4>>quaternion_samples;
     
     // 메모리 예약 (성능 최적화)
     accel_samples.reserve(COVARIANCE_SAMPLE_COUNT);
