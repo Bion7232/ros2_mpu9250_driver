@@ -412,7 +412,7 @@ void MPU9250Sensor::printCovarianceMatrix(const std::array<double, 9>& cov,
                                          const std::string& name)
 {
     std::cout << std::endl << name << " Covariance Matrix:" << std::endl;
-    std::cout << std::fixed << std::setprecision(8);
+    //std::cout << std::fixed << std::setprecision(8);
     
     for (int i = 0; i < 3; i++) {
         std::cout << "[";
@@ -433,11 +433,11 @@ void MPU9250Sensor::printCovarianceMatrix(const std::array<double, 9>& cov,
 }
 
 std::array<double,4> MPU9250Sensor::calcQuart(double linear_acceleration_y, double linear_acceleration_z){
-  roll = atan2(linear_acceleration_y, linear_acceleration_z);
-  pitch = atan2(-linear_acceleration_y,
+  double roll = atan2(linear_acceleration_y, linear_acceleration_z);
+  double pitch = atan2(-linear_acceleration_y,
                 (sqrt(linear_acceleration_y * linear_acceleration_y +
                       linear_acceleration_z * linear_acceleration_z)));
-  yaw = atan2(getMagneticFluxDensityY(), getMagneticFluxDensityX());
+  double yaw = atan2(getMagneticFluxDensityY(), getMagneticFluxDensityX());
 
   // Convert to quaternion
   double cy = cos(yaw * 0.5);
@@ -447,18 +447,14 @@ std::array<double,4> MPU9250Sensor::calcQuart(double linear_acceleration_y, doub
   double cr = cos(roll * 0.5);
   double sr = sin(roll * 0.5);
 
-  x = cy * cp * sr - sy * sp * cr;
-  y = sy * cp * sr + cy * sp * cr;
-  z = sy * cp * cr - cy * sp * sr;
-  w = cy * cp * cr + sy * sp * sr;
-      // double형 데이터를 담을 vector 선언
+  // double형 데이터를 담을 vector 선언
   std::array<double, 4> myDoubleVector;
 
   // 각 데이터를 vector에 하나씩 추가 (push_back 사용)
-  myDoubleVector[0]=x;
-  myDoubleVector[1]=y;
-  myDoubleVector[2]=z;
-  myDoubleVector[3]=w;
+  myDoubleVector[0]=(cy * cp * sr - sy * sp * cr);
+  myDoubleVector[1]=(sy * cp * sr + cy * sp * cr);
+  myDoubleVector[2]=(sy * cp * cr - cy * sp * sr);
+  myDoubleVector[3]=(cy * cp * cr + sy * sp * sr);
   return myDoubleVector;
 }
 void MPU9250Sensor::computeQuaternionCovariance(

@@ -8,6 +8,7 @@
 #include "I2cCommunicator.h"
 
 #include <vector>
+#include <cmath>
 
 class MPU9250Sensor {
  public:
