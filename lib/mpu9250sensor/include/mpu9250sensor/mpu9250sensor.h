@@ -48,7 +48,7 @@ class MPU9250Sensor {
   std::array<double, 9> get_accel_covariance_();
   std::array<double, 9> get_gyro_covariance_();
   std::array<double, 9> get_orientation_covariance_();
-  std::array<double, 9> MPU9250Sensor::get_mag_covariance_();
+  std::array<double, 9> get_mag_covariance_();
  private:
   void initImuI2c() const;
   void initMagnI2c() const;
