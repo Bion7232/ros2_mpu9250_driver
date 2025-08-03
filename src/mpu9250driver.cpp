@@ -64,7 +64,7 @@ void MPU9250Driver::handleInput()
   message.linear_acceleration.y = mpu9250_->getAccelerationY();
   message.linear_acceleration.z = mpu9250_->getAccelerationZ();
   //message.angular_velocity_covariance[0] = {0};
-  message.angular_velocity_covariance[0] = mpu9250_->get_gyro_covariance_();
+  message.angular_velocity_covariance = mpu9250_->get_gyro_covariance_();
   message.angular_velocity.x = mpu9250_->getAngularVelocityX();
   message.angular_velocity.y = mpu9250_->getAngularVelocityY();
   message.angular_velocity.z = mpu9250_->getAngularVelocityZ();
