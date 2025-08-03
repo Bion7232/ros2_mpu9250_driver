@@ -69,6 +69,11 @@ class MPU9250Sensor {
   std::array<double, 4> quaternionMultiply(
     const std::array<double, 4>& q1,
     const std::array<double, 4>& q2);
+  std::array<double, 9> get_accel_covariance_();
+  std::array<double, 9> get_gyro_covariance_();
+  std::array<double, 9> get_orientation_covariance_();
+
+
 
   std::unique_ptr<I2cCommunicator> i2cBus_;
   int accel_range_{2};
