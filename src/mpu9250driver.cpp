@@ -47,6 +47,10 @@ MPU9250Driver::MPU9250Driver() : Node("mpu9250publisher")
   mpu9250_->printOffsets();
   // Create publisher
   publisher_ = this->create_publisher<sensor_msgs::msg::Imu>("imu", 10);
+  // 자기장 퍼블리셔 추가
+  mag_publisher_ = this->create_publisher<sensor_msgs::msg::MagneticField>(
+      "imu/mag", rclcpp::QoS(10));
+
   std::chrono::duration<int64_t, std::milli> frequency =
       1000ms / this->get_parameter("gyro_range").as_int();
   timer_ = this->create_wall_timer(frequency, std::bind(&MPU9250Driver::handleInput, this));
@@ -73,6 +77,19 @@ void MPU9250Driver::handleInput()
   message.orientation_covariance = mpu9250_->get_orientation_covariance_();
   calculateOrientation(message);
   publisher_->publish(message);
+
+
+  // 자기장 데이터 읽어서 메시지 생성
+  auto mag_msg = sensor_msgs::msg::MagneticField();
+  mag_msg.header.stamp = this->get_clock()->now();
+  mag_msg.header.frame_id = "imu_link";
+  auto b = mpu9250_->getMagneticField();  // {bx, by, bz}
+  mag_msg.magnetic_field.x = mpu9250_->getMagneticFluxDensityX();
+  mag_msg.magnetic_field.y = mpu9250_->getMagneticFluxDensityY();
+  mag_msg.magnetic_field.z = mpu9250_->getMagneticFluxDensityZ();
+  // 필요시 공분산 설정
+  mag_msg.magnetic_field_covariance = mpu9250_->get_mag_covariance_();
+  mag_publisher_->publish(mag_msg);
 }
 
 void MPU9250Driver::declareParameters()

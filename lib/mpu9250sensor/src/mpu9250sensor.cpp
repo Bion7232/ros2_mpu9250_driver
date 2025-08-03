@@ -319,11 +319,15 @@ void MPU9250Sensor::covariance()
     // 데이터 수집용 벡터
     std::vector<std::array<double, 3>>accel_samples;
     std::vector<std::array<double, 3>>gyro_samples;
+
+    std::vector<std::array<double, 3>>mag_samples;
     std::vector<std::array<double, 4>>quaternion_samples;
+
     
     // 메모리 예약 (성능 최적화)
     accel_samples.reserve(COVARIANCE_SAMPLE_COUNT);
     gyro_samples.reserve(COVARIANCE_SAMPLE_COUNT);
+    mag_samples.reserve(COVARIANCE_SAMPLE_COUNT);
     quaternion_samples.reserve(COVARIANCE_SAMPLE_COUNT);
 
     int count = 0;
@@ -335,11 +339,16 @@ void MPU9250Sensor::covariance()
         double corrected_gyro_x = getAngularVelocityX();
         double corrected_gyro_y = getAngularVelocityY();
         double corrected_gyro_z = getAngularVelocityZ();
+        
+        double corrected_mag_x = getMagneticFluxDensityX();
+        double corrected_mag_y = getMagneticFluxDensityY();
+        double corrected_mag_z = getMagneticFluxDensityZ();
 
         // 보정된 데이터를 샘플에 추가
         accel_samples.push_back({corrected_accel_x, corrected_accel_y, corrected_accel_z});
         gyro_samples.push_back({corrected_gyro_x, corrected_gyro_y, corrected_gyro_z});
         quaternion_samples.push_back(calcQuart(corrected_accel_y, corrected_accel_z));
+        mag_samples.push_back({corrected_mag_x, corrected_mag_y, corrected_mag_z});
         ++count;
 
         // 진행 상황 표시 (10%마다)
@@ -355,6 +364,7 @@ void MPU9250Sensor::covariance()
     // 공분산 행렬 계산
     computeCovarianceMatrix(accel_samples, accel_covariance_);
     computeCovarianceMatrix(gyro_samples, gyro_covariance_);
+    computeCovarianceMatrix(mag_samples, mag_covariance_);
     computeQuaternionCovariance(quaternion_samples, orientation_covariance_);
 
     // 방향 공분산은 자이로스코프 기반으로 추정 (간단한 방법)
@@ -369,6 +379,7 @@ void MPU9250Sensor::covariance()
     // 결과 출력
     printCovarianceMatrix(accel_covariance_, "Accelerometer");
     printCovarianceMatrix(gyro_covariance_, "Gyroscope");
+    printCovarianceMatrix(mag_covariance_, "magnetometer");
     printCovarianceMatrix(orientation_covariance_, "Orientation");
 }
 
@@ -521,6 +532,9 @@ std::array<double, 9> MPU9250Sensor::get_accel_covariance_(){
 };
 std::array<double, 9> MPU9250Sensor::get_gyro_covariance_(){
   return gyro_covariance_;
+};
+std::array<double, 9> MPU9250Sensor::get_mag_covariance_(){
+  return mag_covariance_;
 };
 std::array<double, 9> MPU9250Sensor::get_orientation_covariance_(){
   return orientation_covariance_;
